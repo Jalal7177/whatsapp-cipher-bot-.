@@ -1,8 +1,23 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 
+// إعداد البوت مع خيارات التشغيل للاستضافات المجانية
 const client = new Client({
-    authStrategy: new LocalAuth()
+    authStrategy: new LocalAuth(),
+    puppeteer: {
+        handleSIGTERM: false,
+        headless: true,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-gpu'
+        ],
+    }
 });
 
 // قائمة التشفير الخاصة بك
@@ -16,27 +31,36 @@ const cipher = {
 // عكس القائمة لفك التشفير
 const deCipher = Object.fromEntries(Object.entries(cipher).map(([k, v]) => [v, k]));
 
+// توليد كود الـ QR في السجلات (Logs)
 client.on('qr', (qr) => {
+    console.log('--- امسح الكود أدناه لربط البوت ---');
     qrcode.generate(qr, {small: true});
-    console.log('امسح الكود لتشغيل البوت:');
 });
 
+// رسالة عند نجاح التشغيل
 client.on('ready', () => {
-    console.log('البوت جاهز للعمل!');
+    console.log('✅ تم تشغيل البوت بنجاح وهو الآن جاهز للعمل!');
 });
 
+// معالجة الرسائل (تشفير وفك تشفير)
 client.on('message', async msg => {
-    const text = msg.body;
+    const text = msg.body.trim();
 
-    if (isNaN(text.replace(/\s/g, ''))) {
-        // إذا كان المدخل نصاً -> تشفير
+    // التحقق إذا كانت الرسالة أرقاماً (لفك التشفير) أو نصاً (للتشفير)
+    // نستخدم regex للتأكد من أن الرسالة تحتوي على أرقام وفواصل فقط
+    const isNumbers = /^[0-9-\s]+$/.test(text);
+
+    if (!isNumbers) {
+        // حالة التشفير: تحويل النص إلى أرقام
         let result = text.split('').map(char => cipher[char] || char).join('-');
         msg.reply(`القفل 🔒:\n${result}`);
     } else {
-        // إذا كان المدخل أرقاماً -> فك تشفير
+        // حالة فك التشفير: تحويل الأرقام إلى نص
+        // نقوم بالتقسيم بناءً على الشرطة '-'
         let result = text.split('-').map(num => deCipher[num.trim()] || num).join('');
         msg.reply(`المفتاح 🔑:\n${result}`);
     }
 });
 
+// تشغيل البوت
 client.initialize();
