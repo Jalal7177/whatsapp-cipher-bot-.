@@ -1,0 +1,13 @@
+{
+  "name": "whatsapp-cipher-bot",
+  "version": "1.0.0",
+  "description": "بوت تشفير واتساب",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "whatsapp-web.js": "^1.23.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
